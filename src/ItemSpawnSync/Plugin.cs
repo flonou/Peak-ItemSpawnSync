@@ -77,13 +77,17 @@ public partial class Plugin : BaseUnityPlugin
     /// <param name="data">Spawn data to load</param>
     /// <param name="lockData">If true, prevents further data loading permanently</param>
     /// <returns>True if data was loaded, false if blocked by lock</returns>
-    public bool LoadSpawnData(MapSpawnerData data, bool lockData = false)
+    public bool LoadSpawnDataInCurrentLevel(MapSpawnerData data, bool lockData = false)
     {
-        bool success = SpawnerSyncManager.Instance.LoadMapSpawnerData(data, lockData);
+        bool success = SpawnerSyncManager.Instance.LoadMapSpawnerDataInCurrentLevel(data, lockData);
         if (success)
         {
             Log!.LogInfo($"Loaded spawn data with {data.Spawners.Count} spawners" + (lockData ? " (LOCKED)" : ""));
         }
+        
+        // If spawning is disabled, spawn items from loaded data
+        if (SpawnerSyncManager.Instance.DisableSpawning)
+                SpawnerSyncManager.Instance.SpawnItemsFromStartSpawners();
         return success;
     }
 
@@ -107,8 +111,6 @@ public partial class Plugin : BaseUnityPlugin
 
             if (data != null)
             {
-                LoadSpawnData(data);
-
                 Log!.LogInfo($"Loaded spawn data from: {filepath}");
                 Log!.LogInfo($"  Spawners: {data.Spawners.Count}");
                 Log!.LogInfo($"  Items: {CountTotalItems(data)}");
@@ -136,11 +138,8 @@ public partial class Plugin : BaseUnityPlugin
         {
             MapSpawnerData? data = JsonConvert.DeserializeObject<MapSpawnerData>(json);
             if (data != null)
-            {
-                return LoadSpawnData(data, lockData);
-            }
-            else
-                Log!.LogError($"Could not deserialize spawn data from JSON: {json}");
+                return true;
+            Log!.LogError($"Could not deserialize spawn data from JSON: {json}");
             return false;
         }
         catch (Exception ex)
@@ -232,10 +231,9 @@ public partial class Plugin : BaseUnityPlugin
         // Load spawn data
         if (Input.GetKeyDown(LoadDataKey))
         {
-            LoadSpawnDataFromFile(FileNameConfig!.Value);
-            // If spawning is disabled, spawn items from loaded data
-            if (SpawnerSyncManager.Instance.DisableSpawning)
-                SpawnerSyncManager.Instance.SpawnItemsFromStartSpawners();
+            MapSpawnerData? spawnerData = LoadSpawnDataFromFile(FileNameConfig!.Value);
+            if (spawnerData != null)
+                LoadSpawnDataInCurrentLevel(spawnerData);
         }
     }
 

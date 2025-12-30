@@ -14,6 +14,7 @@ namespace ItemSpawnSync.Data
         public string ItemPrefabName = string.Empty;        // Name of the spawned item prefab
         public Vector3 Position;             // Position of the spawn spot
         public Quaternion Rotation;          // Rotation of the spawn spot
+        public int ViewID;                // View ID for networked items
     }
 
     /// <summary>

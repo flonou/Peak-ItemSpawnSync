@@ -39,6 +39,8 @@ public class SpawnerSyncManager : MonoBehaviour
 
     public bool IsDataLocked { get; private set; } = false;
     public bool UseLoadedSpawnData { get; private set; } = false;
+
+    public Dictionary<int, Item> OriginalIdToItemMap { get ; private set;}= [];
     #endregion 
 
     #region fields
@@ -95,7 +97,7 @@ public class SpawnerSyncManager : MonoBehaviour
     /// <param name="data">Spawn data to replay</param>
     /// <param name="lockData">If true, prevents further data loading permanently</param>
     /// <returns>True if data was loaded, false if blocked by lock</returns>
-    public bool LoadMapSpawnerData(MapSpawnerData data, bool lockData = false)
+    public bool LoadMapSpawnerDataInCurrentLevel(MapSpawnerData data, bool lockData = false)
     {
         if (IsDataLocked)
         {
@@ -193,7 +195,9 @@ public class SpawnerSyncManager : MonoBehaviour
             foreach (SpawnedItemData itemData in data.SpawnedItems)
             {
                 Item component = PhotonNetwork.InstantiateItemRoom(itemData.ItemPrefabName, itemData.Position, itemData.Rotation).GetComponent<Item>();
-                spawnedViews.Add(component.GetComponent<PhotonView>());
+                PhotonView photonView = component.GetComponent<PhotonView>();
+                OriginalIdToItemMap[itemData.ViewID]=component;
+                spawnedViews.Add(photonView);
                 ForceSyncForFramesMethod.Invoke(component, new object[] { 10 });
                 if (component != null && spawner.isKinematic)
                 {
@@ -269,7 +273,7 @@ public class SpawnerSyncManager : MonoBehaviour
     /// <summary>
     /// Helper to save spawner data from GameObjects
     /// </summary>
-    private void SaveSpawnerData(Spawner spawner, List<GameObject> spawnedObjects)
+    private void SaveSpawnerData(Spawner spawner, List<PhotonView> spawnedObjects)
     {
         Type type = spawner.GetType();
         SpawnerInstanceData spawnerData = new()
@@ -287,10 +291,10 @@ public class SpawnerSyncManager : MonoBehaviour
                 }
                 return new SpawnedItemData
                 {
-
                     ItemPrefabName = itemName,
                     Position = obj.transform.position,
-                    Rotation = obj.transform.rotation
+                    Rotation = obj.transform.rotation,
+                    ViewID = obj.ViewID
                 };
             }
             ).ToList()
@@ -309,7 +313,7 @@ public class SpawnerSyncManager : MonoBehaviour
         {
             List<PhotonView> spawnedItems = spawner.TrySpawnItems();
             logger?.LogInfo($"Triggered spawnOnStart on spawner {spawner.name} and got {spawnedItems.Count} items");
-            SaveSpawnerData(spawner, spawnedItems.Select(view => view.gameObject).ToList());
+            SaveSpawnerData(spawner, spawnedItems);
             return true;
         }
         // For other spawners, use reflection to find spawn methods
@@ -329,7 +333,7 @@ public class SpawnerSyncManager : MonoBehaviour
             List<Transform>? spawnSpots = getSpawnSpotsMethod.Invoke(spawner, null) as List<Transform>;
             List<PhotonView> spawnedItems = spawner.SpawnItems(spawnSpots);
             logger?.LogInfo($"Triggered {type.Name}.SpawnItems() on spawner {spawner.name} and got {spawnedItems.Count} items");
-            SaveSpawnerData(spawner, spawnedItems.Select(view => view.gameObject).ToList());
+            SaveSpawnerData(spawner, spawnedItems);
             return true;
         }
         else
