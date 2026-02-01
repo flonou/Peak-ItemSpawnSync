@@ -18,12 +18,15 @@ After a first launch of the game with the mod installed, a configuration file wi
 ### Standalone Usage (default keys)
 
 1. (optional) Disabling spawning in the configuration file. This will prevent items to spawn automatically before saving and avoid confusion about what is saved and what isn't
-2. **Press F4** - Triggers all spawners and record the spawn data
-3. **Press F5** - Saves current spawn data to a file
-4. **Press F6** - Loads spawn data from the file defined in the configuration and trigger spawners that should spawn on start
+2. **Press CTRL+F4** - Triggers all spawners and record the spawn data
+3. **Press CTRL+F5** - Saves current spawn data to a file
+4. **Press CTRL+F6** - Loads spawn data from the file defined in the configuration and trigger spawners that should spawn on start
+5. **Press CTRL+F7** - Export loot spawn weights to file
+6. **Press CTRL+F8** - Import loot spawn weights to file
 
 Files saved to: `BepInEx/config/ItemSpawnSync/MapName_spawn_data_date_time.json`
 Default loaded file path: `BepInEx/config/ItemSpawnSync/spawn_data.json`
+Spawn file exported to / imported from: `BepInEx\config\ItemSpawnSync\LootData.json`
 
 ### Usage through other mods
 

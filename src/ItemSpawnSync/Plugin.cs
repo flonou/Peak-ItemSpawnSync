@@ -10,7 +10,9 @@ using ItemSpawnSync.Data;
 using Newtonsoft.Json;
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 using UnityEngine;
 
@@ -31,24 +33,30 @@ public partial class Plugin : BaseUnityPlugin
     #region properties
     public static Plugin? Instance { get; private set; }
     public bool IsSpawnDataLocked => SpawnerSyncManager.Instance.IsDataLocked;
-    public KeyCode LoadDataKey => LoadDataKeyConfig!.Value;
+    public KeyboardShortcut LoadDataKey => LoadDataKeyConfig!.Value;
     public static ManualLogSource? Log { get; private set; }
-    public KeyCode SaveDataKey => SaveDataKeyConfig!.Value;
-    public KeyCode TriggerSpawnKey => TriggerSpawnKeyConfig!.Value;
+    public KeyboardShortcut SaveDataKey => SaveDataKeyConfig!.Value;
+    public KeyboardShortcut TriggerSpawnKey => TriggerSpawnKeyConfig!.Value;
+    public KeyboardShortcut ExportLootDataKey => ExportLootDataKeyConfig!.Value;
+    public KeyboardShortcut ImportLootDataKey => ImportLootDataKeyConfig!.Value;
+    public static string DataDirectory => dataDirectory!;
+
     #endregion 
 
     #region fields
-    public ConfigEntry<bool>? DisableSpawningConfig;
 
     // Configuration
     public bool EnableKeyTrigger = true;
 
+    public ConfigEntry<bool>? DisableSpawningConfig;
     public ConfigEntry<string>? FileNameConfig;
-    public ConfigEntry<KeyCode>? LoadDataKeyConfig;
-    public ConfigEntry<KeyCode>? SaveDataKeyConfig;
+    public ConfigEntry<KeyboardShortcut>? LoadDataKeyConfig;
+    public ConfigEntry<KeyboardShortcut>? ExportLootDataKeyConfig;
+    public ConfigEntry<KeyboardShortcut>? SaveDataKeyConfig;
     public ConfigEntry<bool>? SpawnIfNoDataFoundConfig;
-    public ConfigEntry<KeyCode>? TriggerSpawnKeyConfig;
-    private string? dataDirectory;
+    public ConfigEntry<KeyboardShortcut>? TriggerSpawnKeyConfig;
+    public ConfigEntry<KeyboardShortcut>? ImportLootDataKeyConfig;
+    private static string? dataDirectory;
     private Harmony? harmony;
 
     private static readonly JsonSerializerSettings jsonSettings = new()
@@ -185,9 +193,11 @@ public partial class Plugin : BaseUnityPlugin
         Instance = this;
         Log = base.Logger;
 
-        TriggerSpawnKeyConfig = Config.Bind("Controls", "TriggerSpawnKey", KeyCode.F4, "Key to trigger all spawners");
-        SaveDataKeyConfig = Config.Bind("Controls", "SaveDataKey", KeyCode.F5, "Key to save current spawn data to file");
-        LoadDataKeyConfig = Config.Bind("Controls", "LoadDataKey", KeyCode.F6, "Key to load spawn data from file");
+        TriggerSpawnKeyConfig = Config.Bind("Controls", "TriggerSpawnKey", new KeyboardShortcut(KeyCode.F4, KeyCode.LeftControl), "Key to trigger all spawners");
+        SaveDataKeyConfig = Config.Bind("Controls", "SaveDataKey", new KeyboardShortcut(KeyCode.F5, KeyCode.LeftControl), "Key to save current spawn data to file");
+        LoadDataKeyConfig = Config.Bind("Controls", "LoadDataKey", new KeyboardShortcut(KeyCode.F6, KeyCode.LeftControl), "Key to load spawn data from file");
+        ExportLootDataKeyConfig = Config.Bind("Controls", "ExportLootDataKey", new KeyboardShortcut(KeyCode.F7, KeyCode.LeftControl), "Key to export loot data to file");
+        ImportLootDataKeyConfig = Config.Bind("Controls", "ImportLootDataKey", new KeyboardShortcut(KeyCode.F8, KeyCode.LeftControl), "Key to import loot data from file");
         DisableSpawningConfig = Config.Bind("General", "DisableSpawning", false, "If true, prevents any item spawning unless from loaded data");
         SpawnIfNoDataFoundConfig = Config.Bind("General", "SpawnIfNoDataFound", false, "If true, spawners without loaded data will spawn normally");
         FileNameConfig = Config.Bind("General", "DefaultFileName", "spawn_data.json", "Default filename to load spawn data.");
@@ -213,29 +223,44 @@ public partial class Plugin : BaseUnityPlugin
         Log.LogInfo($"  {TriggerSpawnKey} - Trigger all spawners");
         Log.LogInfo($"  {SaveDataKey} - Save spawn data to file");
         Log.LogInfo($"  {LoadDataKey} - Load spawn data from file");
+        Log.LogInfo($"  {ExportLootDataKey} - Export loot data to file");
+        Log.LogInfo($"  {ImportLootDataKey} - Import loot data from file");
     }
 
     protected void Update()
     {
         // Trigger all spawners
-        if (Input.GetKeyDown(TriggerSpawnKey))
+        if (TriggerSpawnKey.IsDown())
         {
             SpawnerSyncManager.Instance.CaptureSpawns();
         }
         // Save spawn data
-        if (Input.GetKeyDown(SaveDataKey))
+        if (SaveDataKey.IsDown())
         {
             SaveCurrentSpawnData();
         }
 
         // Load spawn data
-        if (Input.GetKeyDown(LoadDataKey))
+        if (LoadDataKey.IsDown())
         {
             MapSpawnerData? spawnerData = LoadSpawnDataFromFile(FileNameConfig!.Value);
             if (spawnerData != null)
                 LoadSpawnDataInCurrentLevel(spawnerData);
         }
+
+        // Export loot data
+        if (ExportLootDataKey.IsDown())
+        {
+            LootDataContainer.ExportLootData();
+        }
+        // Import loot data
+        if (ImportLootDataKey.IsDown())
+        {
+            LootDataContainer.ImportLootData();
+        }
     }
+
+
 
     private int CountTotalItems(MapSpawnerData data)
     {

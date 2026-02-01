@@ -8,6 +8,8 @@ using System.Reflection;
 
 using UnityEngine;
 
+namespace ItemSpawnSync.Data;
+
 /// <summary>
 /// Custom contract resolver that only serializes public fields or fields marked with [SerializeField]
 /// Also handles properties for anonymous types

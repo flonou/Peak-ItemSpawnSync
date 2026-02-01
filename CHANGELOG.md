@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.2]
+- Added KeyPressed options to export and import all spawn data into an external file. This allows to change the spawnable items and their spawn weights
+- Changed key bindings to handle modifiers. Default keybindings now include the left contol key modifier
+
 ## [0.9.1]
 
 ### Added
