@@ -15,6 +15,7 @@ using System.IO;
 using System.Text;
 
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace ItemSpawnSync;
 
@@ -225,6 +226,18 @@ public partial class Plugin : BaseUnityPlugin
         Log.LogInfo($"  {LoadDataKey} - Load spawn data from file");
         Log.LogInfo($"  {ExportLootDataKey} - Export loot data to file");
         Log.LogInfo($"  {ImportLootDataKey} - Import loot data from file");
+
+        
+        SceneManager.sceneUnloaded += OnSceneUnloaded;
+    }
+
+    protected void OnSceneUnloaded(Scene arg0)
+    {
+        if (arg0.name.StartsWith("Level_"))
+        {
+            // When a level is unloaded, we should clear the current spawn data to avoid conflicts with new scene
+            SpawnerSyncManager.Instance.ClearSpawnedData(arg0.name);
+        }
     }
 
     protected void Update()

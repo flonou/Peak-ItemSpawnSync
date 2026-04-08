@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.3]
+- Fixed Spawners not loaded when the spawn data is loaded would not be correctly found if they were inactive
+- Fixed Items were sometimes spawned twice
+- Fixed Some spawners do not return the spawned items (namely RespawnChest). Fixed by patch
+- Added OnItemsSpawned in SpawnerSpawnItemsPatch when items that were loaded from spwaning data are spawned
+
 ## [0.9.2]
 - Added KeyPressed options to export and import all spawn data into an external file. This allows to change the spawnable items and their spawn weights
 - Changed key bindings to handle modifiers. Default keybindings now include the left contol key modifier

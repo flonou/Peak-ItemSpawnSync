@@ -1,5 +1,7 @@
 using HarmonyLib;
 using ItemSpawnSync.Core;
+using ItemSpawnSync.Data;
+
 using Photon.Pun;
 using System;
 using System.Collections.Generic;
@@ -16,6 +18,11 @@ namespace FFSPeak.Patches
     [HarmonyPatch]
     public class SpawnerSpawnItemsPatch
     {
+        /// <summary>
+        /// Event that is invoked when items are spawned
+        /// </summary>
+        public static event Action<List<PhotonView>>? OnItemsSpawned;
+
         /// <summary>
         /// Dynamically find all SpawnItems methods to patch (base Spawner and all derived classes)
         /// </summary>
@@ -68,8 +75,15 @@ namespace FFSPeak.Patches
                 if (manager.HasSpawnerData(__instance))
                 {
                     // Get the saved data and spawn from it
-                    var spawnerData = manager.GetSpawnerData(__instance);
+                    SpawnerInstanceData? spawnerData = manager.GetSpawnerData(__instance);
+                    if (spawnerData == null)
+                    {
+                        __result = new List<PhotonView>();
+                        return manager.SpawnIfNoDataFound;
+                    }
                     __result = manager.SpawnItemsFromData(__instance, spawnerData);
+                    // Invoke the event with the spawned items
+                    OnItemsSpawned?.Invoke(__result);
                     // Skip original method - we're replaying from saved data
                     return false;
                 }

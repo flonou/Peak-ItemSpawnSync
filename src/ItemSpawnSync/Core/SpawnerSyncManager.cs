@@ -67,7 +67,7 @@ public class SpawnerSyncManager : MonoBehaviour
     /// </summary>
     public static List<Spawner> FindAllSpawnersInScene()
     {
-        return FindObjectsByType<Spawner>(FindObjectsSortMode.None).ToList();
+        return FindObjectsByType<Spawner>(FindObjectsInactive.Include, FindObjectsSortMode.None).ToList();
     }
 
     /// <summary>
@@ -194,6 +194,12 @@ public class SpawnerSyncManager : MonoBehaviour
         {
             foreach (SpawnedItemData itemData in data.SpawnedItems)
             {
+                if (OriginalIdToItemMap.ContainsKey(itemData.ViewID))
+                {
+                    logger?.LogInfo($"Skipping spawn of {itemData.ItemPrefabName} (ViewID {itemData.ViewID}) - already spawned");
+                    continue;
+                }
+
                 Item component = PhotonNetwork.InstantiateItemRoom(itemData.ItemPrefabName, itemData.Position, itemData.Rotation).GetComponent<Item>();
                 PhotonView photonView = component.GetComponent<PhotonView>();
                 OriginalIdToItemMap[itemData.ViewID]=component;
@@ -201,7 +207,7 @@ public class SpawnerSyncManager : MonoBehaviour
                 ForceSyncForFramesMethod.Invoke(component, new object[] { 10 });
                 if (component != null && spawner.isKinematic)
                 {
-                    component.GetComponent<PhotonView>().RPC("SetKinematicRPC", RpcTarget.AllBuffered, new object[]
+                    photonView.RPC("SetKinematicRPC", RpcTarget.AllBuffered, new object[]
                     {
                             true,
                             component.transform.position,
@@ -342,6 +348,28 @@ public class SpawnerSyncManager : MonoBehaviour
             return false;
         }
 
+    }
+
+    public void ClearSpawnedData(string sceneName)
+    {
+        logger?.LogInfo($"Clearing spawned data for scene {sceneName}...");
+        if (string.IsNullOrEmpty(sceneName))
+            OriginalIdToItemMap.Clear();
+        else
+        {
+            int removedCount = 0;
+            foreach (var kvp in OriginalIdToItemMap.ToList())
+            {
+                Item item = kvp.Value;
+                // item can be null because the scene was unloaded, or it can still exist but belong to the unloaded scene. In either case, we want to remove it from the map
+                if (item == null || item.gameObject.scene.name == sceneName)
+                {
+                    OriginalIdToItemMap.Remove(kvp.Key);
+                    removedCount++;
+                }
+            }
+            logger?.LogInfo($"Cleared spawned data for scene {sceneName}: {removedCount} items removed.");
+        }
     }
 
     #endregion 
