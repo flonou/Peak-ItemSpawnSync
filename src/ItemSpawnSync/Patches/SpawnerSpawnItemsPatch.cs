@@ -2,6 +2,8 @@ using HarmonyLib;
 using ItemSpawnSync.Core;
 using ItemSpawnSync.Data;
 
+using Peak;
+
 using Photon.Pun;
 using System;
 using System.Collections.Generic;
@@ -9,7 +11,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-namespace FFSPeak.Patches
+namespace ItemSpawnSync.Patches
 {
     /// <summary>
     /// Harmony patch to intercept Spawner.SpawnItems calls for synchronization

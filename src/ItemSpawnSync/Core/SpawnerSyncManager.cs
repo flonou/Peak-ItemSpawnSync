@@ -242,7 +242,7 @@ public class SpawnerSyncManager : MonoBehaviour
             }
             catch (Exception ex)
             {
-                logger?.LogError($"Error spawning from start spawner {spawner.name} of type {spawner.GetType().Name}: {ex.Message}");
+                logger?.LogError($"Error spawning from start spawner {spawner.name} of type {spawner.GetType().Name}: {ex.Message} \n {ex.StackTrace}");
             }
         }
     }
@@ -269,7 +269,10 @@ public class SpawnerSyncManager : MonoBehaviour
             }
             catch (Exception ex)
             {
-                logger?.LogError($"Error triggering spawner {spawner.name} of type {spawner.GetType().Name}: {ex.Message}");
+                if (spawner.photonView != null)
+                    logger?.LogError($"Error triggering spawner {spawner.name} [{spawner.photonView.ViewID}] of type {spawner.GetType().Name}: {ex.Message} \n {ex.StackTrace}");
+                else
+                    logger?.LogError($"Error triggering spawner {spawner.name} of type {spawner.GetType().Name}: {ex.Message} \n {ex.StackTrace}");
             }
         }
         CapturingSpawn = false;
@@ -314,11 +317,20 @@ public class SpawnerSyncManager : MonoBehaviour
     /// </summary>
     private bool TriggerSpawner(Spawner spawner)
     {
+        // reset tracking for this spawner in case it was triggered before
+        if (spawner.HasSpawnTracking(out var tracker))
+        {
+            logger?.LogInfo($"Resetting spawn tracking for spawner {spawner.name} [{spawner.photonView?.ViewID}]");
+            tracker.HasSpawnHistory = false;
+        }
         // If spawner has spawnOnStart enabled, use TrySpawnItems that will spawn using randomization chances
         if (spawner.spawnOnStart)
         {
             List<PhotonView> spawnedItems = spawner.TrySpawnItems();
-            logger?.LogInfo($"Triggered spawnOnStart on spawner {spawner.name} and got {spawnedItems.Count} items");
+            if (spawner.photonView != null)
+                logger?.LogInfo($"Triggered spawnOnStart on spawner {spawner.name} [{spawner.photonView.ViewID}] and got {spawnedItems.Count} items");
+            else
+                logger?.LogInfo($"Triggered spawnOnStart on spawner {spawner.name} and got {spawnedItems.Count} items");
             SaveSpawnerData(spawner, spawnedItems);
             return true;
         }
@@ -338,7 +350,10 @@ public class SpawnerSyncManager : MonoBehaviour
         {
             List<Transform>? spawnSpots = getSpawnSpotsMethod.Invoke(spawner, null) as List<Transform>;
             List<PhotonView> spawnedItems = spawner.SpawnItems(spawnSpots);
-            logger?.LogInfo($"Triggered {type.Name}.SpawnItems() on spawner {spawner.name} and got {spawnedItems.Count} items");
+            if (spawner.photonView != null)
+                logger?.LogInfo($"Triggered {type.Name}.SpawnItems() on spawner {spawner.name} [{spawner.photonView.ViewID}] and got {spawnedItems.Count} items");
+            else
+                logger?.LogInfo($"Triggered {type.Name}.SpawnItems() on spawner {spawner.name} and got {spawnedItems.Count} items");
             SaveSpawnerData(spawner, spawnedItems);
             return true;
         }

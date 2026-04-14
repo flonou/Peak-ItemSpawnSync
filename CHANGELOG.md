@@ -1,9 +1,10 @@
 # Changelog
 
 ## [0.9.3]
-- Fixed Spawners not loaded when the spawn data is loaded would not be correctly found if they were inactive
+- Fixed Spawners not loaded yet when the spawn data is loaded were not be correctly found if they were inactive
 - Fixed Items were sometimes spawned twice
-- Fixed Some spawners do not return the spawned items (namely RespawnChest). Fixed by patch
+- Fixed Some spawners do not return the spawned items (namely RespawnChest). Fixed by patch (Removed since Peak 1.16.a)
+- Fixed Errors in SpawnAndTrackFromItemHistory from the new update (1.16.a)
 - Added OnItemsSpawned in SpawnerSpawnItemsPatch when items that were loaded from spwaning data are spawned
 
 ## [0.9.2]
