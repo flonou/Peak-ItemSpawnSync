@@ -59,6 +59,10 @@ public partial class Plugin : BaseUnityPlugin
     public ConfigEntry<KeyboardShortcut>? ImportLootDataKeyConfig;
     private static string? dataDirectory;
     private Harmony? harmony;
+    public event Action<string>? OnSpawnDataSaved;
+    public event Action<List<Spawner>>? OnSpawnersTriggered;
+    public event Action<List<Spawner>>? OnSpawnDataSpawnedInLevel;
+    public event Action<string>? OnSpawnDataLoaded;
 
     private static readonly JsonSerializerSettings jsonSettings = new()
     {
@@ -91,7 +95,7 @@ public partial class Plugin : BaseUnityPlugin
         bool success = SpawnerSyncManager.Instance.LoadMapSpawnerDataInCurrentLevel(data, lockData);
         if (success)
         {
-            Log!.LogInfo($"Loaded spawn data with {data.Spawners.Count} spawners" + (lockData ? " (LOCKED)" : ""));
+            Log!.LogMessage($"Loaded spawn data with {data.Spawners.Count} spawners" + (lockData ? " (LOCKED)" : ""));
         }
         
         // If spawning is disabled, spawn items from loaded data
@@ -120,12 +124,13 @@ public partial class Plugin : BaseUnityPlugin
 
             if (data != null)
             {
-                Log!.LogInfo($"Loaded spawn data from: {filepath}");
-                Log!.LogInfo($"  Spawners: {data.Spawners.Count}");
-                Log!.LogInfo($"  Items: {CountTotalItems(data)}");
+                Log!.LogMessage($"Loaded spawn data from: {filepath}");
+                Log!.LogMessage($"  Spawners: {data.Spawners.Count}");
+                Log!.LogMessage($"  Items: {CountTotalItems(data)}");
             }
             else
                 Log!.LogError($"Failed to deserialize spawn data from json {json}");
+            OnSpawnDataLoaded?.Invoke(filepath);
             return data;
         }
         catch (Exception ex)
@@ -165,7 +170,7 @@ public partial class Plugin : BaseUnityPlugin
     {
         try
         {
-            MapSpawnerData data = SpawnerSyncManager.Instance.CurrentMapData;
+            MapSpawnerData data = SpawnerSyncManager.Instance?.CurrentMapData;
             if (data == null || data.Spawners.Count == 0)
             {
                 Log!.LogWarning("No spawn data to save. Start capture first and trigger spawners.");
@@ -179,9 +184,10 @@ public partial class Plugin : BaseUnityPlugin
             string json = JsonConvert.SerializeObject(data, Formatting.Indented, jsonSettings);
             File.WriteAllText(filepath, json);
 
-            Log!.LogInfo($"Saved spawn data to: {filepath}");
-            Log!.LogInfo($"  Spawners: {data.Spawners.Count}");
-            Log!.LogInfo($"  Items: {CountTotalItems(data)}");
+            Log!.LogMessage($"Saved spawn data to: {filepath}");
+            Log!.LogMessage($"  Spawners: {data.Spawners.Count}");
+            Log!.LogMessage($"  Items: {CountTotalItems(data)}");
+            OnSpawnDataSaved?.Invoke(filepath);
         }
         catch (Exception ex)
         {
@@ -212,20 +218,20 @@ public partial class Plugin : BaseUnityPlugin
         SpawnerSyncManager.Instance.DisableSpawning = DisableSpawningConfig.Value;
         SpawnerSyncManager.Instance.SpawnIfNoDataFound = SpawnIfNoDataFoundConfig.Value;
 
-        Log.LogInfo($"Plugin {Name} is loaded!");
-        Log.LogInfo($"Data directory: {dataDirectory}");
+        Log.LogMessage($"Plugin {Name} is loaded!");
+        Log.LogMessage($"Data directory: {dataDirectory}");
 
         // Apply Harmony patches
         harmony = new Harmony(Name);
         harmony.PatchAll();
 
-        Log.LogInfo("Harmony patches applied");
-        Log.LogInfo($"Controls:");
-        Log.LogInfo($"  {TriggerSpawnKey} - Trigger all spawners");
-        Log.LogInfo($"  {SaveDataKey} - Save spawn data to file");
-        Log.LogInfo($"  {LoadDataKey} - Load spawn data from file");
-        Log.LogInfo($"  {ExportLootDataKey} - Export loot data to file");
-        Log.LogInfo($"  {ImportLootDataKey} - Import loot data from file");
+        Log.LogMessage("Harmony patches applied");
+        Log.LogMessage($"Controls:");
+        Log.LogMessage($"  {TriggerSpawnKey} - Trigger all spawners");
+        Log.LogMessage($"  {SaveDataKey} - Save spawn data to file");
+        Log.LogMessage($"  {LoadDataKey} - Load spawn data from file");
+        Log.LogMessage($"  {ExportLootDataKey} - Export loot data to file");
+        Log.LogMessage($"  {ImportLootDataKey} - Import loot data from file");
 
         
         SceneManager.sceneUnloaded += OnSceneUnloaded;
@@ -288,6 +294,16 @@ public partial class Plugin : BaseUnityPlugin
     private void OnDestroy()
     {
         harmony?.UnpatchSelf();
+    }
+
+    public void PublishSpawnersTriggered(List<Spawner> spawners)
+    {
+        OnSpawnersTriggered?.Invoke(spawners);
+    }
+
+    public void PublishSpawnDataSpawnedInLevel(List<Spawner> spawners)
+    {
+        OnSpawnDataSpawnedInLevel?.Invoke(spawners);
     }
 
     #endregion 

@@ -29,7 +29,7 @@ public class LootDataContainer
         SpawnData = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, int>>>(json) 
             ?? new Dictionary<string, Dictionary<string, int>>();
 
-        Plugin.Log?.LogInfo($"Loot data imported from {filePath}");
+        Plugin.Log?.LogMessage($"Loot data imported from {filePath}");
         ApplyLootData();
     }
 
@@ -40,7 +40,7 @@ public class LootDataContainer
         
         string filePath = System.IO.Path.Combine(Plugin.DataDirectory, LootDataFileName);
         System.IO.File.WriteAllText(filePath, json);
-        Plugin.Log?.LogInfo($"Loot data exported to {filePath}");
+        Plugin.Log?.LogMessage($"Loot data exported to {filePath}");
     }
 
     private static void ApplyLootData()

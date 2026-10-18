@@ -113,7 +113,7 @@ public class SpawnerSyncManager : MonoBehaviour
         List<Spawner> currentSpawners = FindAllSpawnersInScene();
         HashSet<SpawnerInstanceData> matchedData = [];
 
-        logger?.LogInfo($"Found {currentSpawners.Count} spawners in scene, attempting to match with {data.Spawners.Count} data entries");
+        logger?.LogMessage($"Found {currentSpawners.Count} spawners in scene, attempting to match with {data.Spawners.Count} data entries");
 
         // Phase 1: Match by PhotonView ID (if >= 0)
         int matchedByViewID = 0;
@@ -163,7 +163,7 @@ public class SpawnerSyncManager : MonoBehaviour
             }
         }
 
-        logger?.LogInfo($"Matched {matchedByViewID} spawners by ViewID, {matchedByProximity} by proximity. Total: {spawnerToDataMap.Count}/{data.Spawners.Count}");
+        logger?.LogMessage($"Matched {matchedByViewID} spawners by ViewID, {matchedByProximity} by proximity. Total: {spawnerToDataMap.Count}/{data.Spawners.Count}");
 
         // Enable replay mode
         UseLoadedSpawnData = true;
@@ -171,11 +171,11 @@ public class SpawnerSyncManager : MonoBehaviour
         if (lockData)
         {
             IsDataLocked = true;
-            logger?.LogInfo($"Started replaying spawner data with {data.Spawners.Count} spawners (LOCKED)");
+            logger?.LogMessage($"Started replaying spawner data with {data.Spawners.Count} spawners (LOCKED)");
         }
         else
         {
-            logger?.LogInfo($"Started replaying spawner data with {data.Spawners.Count} spawners");
+            logger?.LogMessage($"Started replaying spawner data with {data.Spawners.Count} spawners");
         }
 
         return true;
@@ -231,7 +231,7 @@ public class SpawnerSyncManager : MonoBehaviour
     {
         // Get all spawners that have "spawnOnStart" enabled and are enabled
         List<Spawner> spawners = FindAllSpawnersInScene().Where(s => s.spawnOnStart).ToList();
-        logger?.LogInfo($"Spawning items from {spawners.Count} start spawners...");
+        logger?.LogMessage($"Spawning items from {spawners.Count} start spawners...");
         foreach (Spawner? spawner in spawners)
         {
             try
@@ -245,6 +245,8 @@ public class SpawnerSyncManager : MonoBehaviour
                 logger?.LogError($"Error spawning from start spawner {spawner.name} of type {spawner.GetType().Name}: {ex.Message} \n {ex.StackTrace}");
             }
         }
+        
+        Plugin.Instance?.PublishSpawnDataSpawnedInLevel(spawners);
     }
 
     /// <summary>
@@ -253,7 +255,7 @@ public class SpawnerSyncManager : MonoBehaviour
     public void TriggerAllSpawners()
     {
         List<Spawner> spawners = FindAllSpawnersInScene();
-        logger?.LogInfo($"Triggering {spawners.Count} spawners...");
+        logger?.LogMessage($"Triggering {spawners.Count} spawners...");
 
         CapturingSpawn = true;
 
@@ -276,7 +278,8 @@ public class SpawnerSyncManager : MonoBehaviour
             }
         }
         CapturingSpawn = false;
-        logger?.LogInfo($"Triggered {triggered} spawners out of {spawners.Count} successfully");
+        logger?.LogMessage($"Triggered {triggered} spawners out of {spawners.Count} successfully");
+        Plugin.Instance?.PublishSpawnersTriggered(spawners);
     }
 
     /// <summary>
@@ -367,7 +370,7 @@ public class SpawnerSyncManager : MonoBehaviour
 
     public void ClearSpawnedData(string sceneName)
     {
-        logger?.LogInfo($"Clearing spawned data for scene {sceneName}...");
+        logger?.LogMessage($"Clearing spawned data for scene {sceneName}...");
         if (string.IsNullOrEmpty(sceneName))
             OriginalIdToItemMap.Clear();
         else
@@ -383,7 +386,7 @@ public class SpawnerSyncManager : MonoBehaviour
                     removedCount++;
                 }
             }
-            logger?.LogInfo($"Cleared spawned data for scene {sceneName}: {removedCount} items removed.");
+            logger?.LogMessage($"Cleared spawned data for scene {sceneName}: {removedCount} items removed.");
         }
     }
 

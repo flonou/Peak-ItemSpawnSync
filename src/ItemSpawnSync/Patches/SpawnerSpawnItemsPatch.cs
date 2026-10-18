@@ -66,7 +66,12 @@ namespace ItemSpawnSync.Patches
         static bool Prefix(Spawner __instance, List<Transform> spawnSpots, ref List<PhotonView> __result)
         {
             var manager = SpawnerSyncManager.Instance;
-            
+            if (!__instance.TryGetComponent(out SpawnedItemTracker tracker))
+            {
+                // Add tracker if it's missing (shouldn't happen, but just in case)
+                tracker = __instance.gameObject.AddComponent<SpawnedItemTracker>();
+                tracker.Init();
+            }
             // If manager doesn't exist, let original method run
             if (manager == null)
                 return true;

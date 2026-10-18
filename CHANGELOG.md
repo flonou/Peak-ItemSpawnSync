@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.5]
+ - Fixed compatibility with Peak 2.6
+
+## [0.9.4]
+ - Fixed some spawners not spawning data due to SpawnHistory messing with the plugin
+ - Added OnSpawnDataSaved, OnSpawnersTriggered, OnSpawnDataSpawnedInLevel, OnSpawnDataLoaded actions
+
 ## [0.9.3]
 - Fixed Spawners not loaded yet when the spawn data is loaded were not be correctly found if they were inactive
 - Fixed Items were sometimes spawned twice
